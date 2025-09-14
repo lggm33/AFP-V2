@@ -49,6 +49,11 @@ if 'RAILWAY_ENVIRONMENT' in os.environ:
         'https://*.up.railway.app',
         'https://*.railway.app'
     ])
+    
+    # Also add the admin domain for CSRF
+    current_domain = os.getenv('RAILWAY_PUBLIC_DOMAIN', railway_domain)
+    if current_domain:
+        CSRF_TRUSTED_ORIGINS.append(f'https://{current_domain}')
 
 
 # Application definition
@@ -182,8 +187,10 @@ CACHES = {
 }
 
 # Session Configuration to use Redis
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-SESSION_CACHE_ALIAS = 'default'
+# Temporarily using database sessions for debugging
+# SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+# SESSION_CACHE_ALIAS = 'default'
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
 # Celery Configuration
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', REDIS_URL)
@@ -216,3 +223,41 @@ CELERY_BEAT_SCHEDULE = {
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_TASK_ACKS_LATE = True
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
+
+# ============================================================================
+# LOGGING CONFIGURATION FOR DEBUGGING
+# ============================================================================
+
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'formatters': {
+#         'verbose': {
+#             'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+#             'style': '{',
+#         },
+#     },
+#     'handlers': {
+#         'console': {
+#             'class': 'logging.StreamHandler',
+#             'formatter': 'verbose',
+#         },
+#     },
+#     'loggers': {
+#         'django.contrib.auth': {
+#             'handlers': ['console'],
+#             'level': 'DEBUG' if DEBUG else 'INFO',
+#             'propagate': True,
+#         },
+#         'django.contrib.sessions': {
+#             'handlers': ['console'],
+#             'level': 'DEBUG' if DEBUG else 'INFO',
+#             'propagate': True,
+#         },
+#         'django_redis': {
+#             'handlers': ['console'],
+#             'level': 'DEBUG' if DEBUG else 'INFO',
+#             'propagate': True,
+#         },
+#     },
+# }
