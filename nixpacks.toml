@@ -1,0 +1,17 @@
+[phases.setup]
+nixPkgs = ['python311', 'pip']
+
+[phases.install]
+cmds = [
+    'cd backend',
+    'pip install -e .[prod]'
+]
+
+[phases.build]
+cmds = [
+    'cd backend',
+    'python manage.py collectstatic --noinput'
+]
+
+[start]
+cmd = 'cd backend && python manage.py migrate && gunicorn afp_v2.wsgi:application --bind 0.0.0.0:$PORT'
