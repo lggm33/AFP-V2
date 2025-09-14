@@ -33,6 +33,23 @@ DEBUG = os.getenv('DJANGO_DEBUG', 'True').lower() == 'true'
 
 ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
+# CSRF Configuration
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+]
+
+# Add Railway domain if in production
+if 'RAILWAY_ENVIRONMENT' in os.environ:
+    railway_domain = os.getenv('RAILWAY_STATIC_URL', '')
+    if railway_domain:
+        CSRF_TRUSTED_ORIGINS.append(f'https://{railway_domain}')
+    # Fallback for Railway domains
+    CSRF_TRUSTED_ORIGINS.extend([
+        'https://*.up.railway.app',
+        'https://*.railway.app'
+    ])
+
 
 # Application definition
 
