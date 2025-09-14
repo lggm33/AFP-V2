@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "afp-v2"
+version = "0.1.0"
+description = "Personal Finance AI System - Automated transaction processing from bank emails"
+readme = "../README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "AFP V2 Team", email = "team@afp-v2.com"}
+]
+requires-python = ">=3.11"
+dependencies = [
+    # Django Core - Basic for starting
+    "Django>=4.2.0,<5.0",
+    "djangorestframework>=3.14.0",
+    "django-cors-headers>=4.3.0",
+    
+    # Database - Only PostgreSQL for Railway
+    "psycopg2-binary>=2.9.0",
+    "django-environ>=0.11.0",
+    "python-dotenv>=1.0.0",
+    
+    # Task Queue and Caching
+    "celery>=5.3.0",
+    "redis>=5.0.0",
+    "django-redis>=5.4.0",
+    
+    # Railway deployment
+    "whitenoise>=6.5.0",
+    "dj-database-url>=2.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    # Development tools basics
+    "django-extensions>=3.2.0",
+    "django-debug-toolbar>=4.2.0",
+    
+    # Testing basics
+    "pytest>=7.4.0",
+    "pytest-django>=4.5.0",
+]
+
+prod = [
+    # Production WSGI Server
+    "gunicorn>=21.2.0",
+]
+
+# ============================================================================
+# DEVELOPMENT TOOLS (Removed for simplicity - can be added later if needed)
+# ============================================================================
+# Black and isort configurations removed to keep setup minimal
+# Add them back when the project grows and code formatting becomes important
+
+# ============================================================================
+# PYTEST Configuration (Testing framework)
+# ============================================================================
+[tool.pytest.ini_options]
+# Configures how pytest executes Django tests
+# DJANGO_SETTINGS_MODULE = tells pytest which settings to use
+# python_files = which files to consider as tests
+# addopts = additional options (--reuse-db = reuse database between tests)
+# testpaths = where to find the tests
+DJANGO_SETTINGS_MODULE = "afp_v2.settings"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+addopts = ["--reuse-db"]
+testpaths = ["tests"]

@@ -54,15 +54,16 @@ Generated from: `prd-finanzas-personales-ai.md`
 
 ## Tasks
 
-- [ ] 1.0 Project Setup & Infrastructure
-  - [ ] 1.1 Initialize Django backend project with proper structure
-  - [ ] 1.2 Set up PostgreSQL database configuration
-  - [ ] 1.3 Configure Redis for Celery task queue and caching
-  - [ ] 1.4 Create React frontend project with TypeScript and Tailwind CSS
-  - [ ] 1.5 Set up Docker containers for development environment
-  - [ ] 1.6 Configure environment variables and secrets management
-  - [ ] 1.7 Set up Railway deployment configuration
-  - [ ] 1.8 Create comprehensive README with setup instructions
+- [ ] 1.0 Project Setup & Infrastructure (Optimized for Railway)
+  - [ x] 1.1 Initialize Django backend project with proper structure
+  - [ x] 1.2 Configure Railway PostgreSQL service and database connection
+  - [ x] 1.3 Configure Railway Redis service for Celery task queue and caching
+  - [ x] 1.4 Create React frontend project with TypeScript and Tailwind CSS
+  - [ x] 1.6 Configure environment variables and secrets management with Railway
+  - [ ] 1.7 Set up Railway deployment configuration and GitHub integration
+  - [ ] 1.8 Create comprehensive README with Railway setup instructions
+  - [ ] 1.9 Create Makefile with development and deployment commands
+  - [ x] 1.10 Set up Railway services (PostgreSQL, Redis) and connect to project
 
 - [ ] 2.0 Backend Authentication & Security
   - [ ] 2.1 Implement User model with email fields for transaction processing
