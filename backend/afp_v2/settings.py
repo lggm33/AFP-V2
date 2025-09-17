@@ -61,6 +61,8 @@ if 'RAILWAY_ENVIRONMENT' in os.environ:
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    'http://localhost:5173',  # Vite dev server
+    'http://127.0.0.1:5173',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
 ]
@@ -97,15 +99,34 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sites",  # Required by allauth
+    
+    # Third party
+    "rest_framework",
+    "rest_framework.authtoken",  # Required by dj-rest-auth
+    "corsheaders",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
+    "allauth.socialaccount.providers.microsoft",
+    "dj_rest_auth",
+    "dj_rest_auth.registration",
+    "rest_framework_simplejwt",
+    
+    # Our apps
+    "accounts",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    "corsheaders.middleware.CorsMiddleware",  # Add CORS
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "allauth.account.middleware.AccountMiddleware",  # Add allauth middleware
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -266,6 +287,143 @@ if 'RAILWAY_ENVIRONMENT' in os.environ and not DEBUG:
     SESSION_COOKIE_SECURE = True  # HTTPS only in production
 else:
     SESSION_COOKIE_SECURE = False  # Allow HTTP in development
+
+# ============================================================================
+# ALLAUTH & AUTHENTICATION CONFIGURATION
+# ============================================================================
+
+# Required by allauth
+SITE_ID = 1
+
+# Authentication backends
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+# REST Framework configuration
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'dj_rest_auth.jwt_auth.JWTCookieAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+}
+
+# JWT Configuration
+from datetime import timedelta
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
+}
+
+# dj-rest-auth configuration
+REST_USE_JWT = True
+JWT_AUTH_COOKIE = 'access-token'
+JWT_AUTH_REFRESH_COOKIE = 'refresh-token'
+
+# dj-rest-auth registration settings
+REST_AUTH = {
+    'USE_JWT': True,
+    'JWT_AUTH_COOKIE': 'access-token',
+    'JWT_AUTH_REFRESH_COOKIE': 'refresh-token',
+    'REGISTER_SERIALIZER': 'accounts.serializers.CustomRegisterSerializer',
+    'USER_DETAILS_SERIALIZER': 'accounts.serializers.CustomUserDetailsSerializer',
+}
+
+# Allauth settings (updated syntax)
+ACCOUNT_LOGIN_METHODS = {'email'}  # Use email instead of username
+ACCOUNT_EMAIL_VERIFICATION = 'none'  # For now, can be 'mandatory' later
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+
+# Signup fields configuration (new way)
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']  # email is required, no username
+
+# Custom account adapter for username generation
+ACCOUNT_ADAPTER = 'accounts.adapters.CustomAccountAdapter'
+
+# Social providers configuration (BASIC SCOPES ONLY)
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        }
+    },
+    'microsoft': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+    }
+}
+
+# ============================================================================
+# OAUTH FOR EMAIL APIS (SEPARATE FROM ALLAUTH)
+# ============================================================================
+
+# OAuth personalizado para email APIs (separado de allauth)
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
+GOOGLE_REDIRECT_URI = os.getenv('GOOGLE_REDIRECT_URI', 'http://localhost:8000/auth/gmail/callback/')
+
+MICROSOFT_CLIENT_ID = os.getenv('MICROSOFT_CLIENT_ID')
+MICROSOFT_CLIENT_SECRET = os.getenv('MICROSOFT_CLIENT_SECRET')
+MICROSOFT_REDIRECT_URI = os.getenv('MICROSOFT_REDIRECT_URI', 'http://localhost:8000/auth/outlook/callback/')
+
+# Token encryption
+TOKEN_ENCRYPTION_KEY = os.getenv('TOKEN_ENCRYPTION_KEY')
+
+# Gmail API Scopes (para OAuth personalizado)
+GMAIL_SCOPES = [
+    'https://www.googleapis.com/auth/gmail.readonly',
+    'https://www.googleapis.com/auth/userinfo.email'
+]
+
+# Outlook API Scopes
+OUTLOOK_SCOPES = [
+    'https://graph.microsoft.com/mail.read',
+    'https://graph.microsoft.com/user.read'
+]
+
+# ============================================================================
+# CORS CONFIGURATION
+# ============================================================================
+
+# CORS para React separado
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # React dev (puerto estándar)
+    "http://localhost:5173",  # Vite dev server (puerto por defecto)
+    "http://127.0.0.1:5173",  # Vite dev server (127.0.0.1)
+    "https://your-frontend-domain.com",  # Production
+]
+
+# Permitir credenciales en requests CORS
+CORS_ALLOW_CREDENTIALS = True
+
+# Headers adicionales para JWT
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # ============================================================================
 # LOGGING CONFIGURATION FOR DEBUGGING

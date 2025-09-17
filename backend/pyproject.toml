@@ -6,29 +6,49 @@ build-backend = "setuptools.build_meta"
 name = "afp-v2"
 version = "0.1.0"
 description = "Personal Finance AI System - Automated transaction processing from bank emails"
-readme = "../README.md"
-license = {text = "MIT"}
+readme = "README.md"
+license = "MIT"
 authors = [
     {name = "AFP V2 Team", email = "team@afp-v2.com"}
 ]
 requires-python = ">=3.11"
 dependencies = [
-    # Django Core - Basic for starting
+    # Django Core
     "Django>=4.2.0,<5.0",
     "djangorestframework>=3.14.0",
     "django-cors-headers>=4.3.0",
     
-    # Database - Only PostgreSQL for Railway
+    # Autenticación básica (SIN email scopes)
+    "django-allauth[socialaccount]>=0.57.0",
+    "dj-rest-auth[with_social]>=5.0.0",
+    "djangorestframework-simplejwt>=5.3.0",
+    
+    # OAuth personalizado para email APIs (Ya documentado)
+    "google-auth>=2.23.0",
+    "google-auth-oauthlib>=1.1.0",
+    "google-auth-httplib2>=0.1.1",
+    "google-api-python-client>=2.100.0",
+    "msal>=1.24.0",
+    "cryptography>=41.0.0",
+    
+    # Database & Environment
     "psycopg2-binary>=2.9.0",
     "django-environ>=0.11.0",
     "python-dotenv>=1.0.0",
+    "dj-database-url>=2.1.0",
     
+    # Async Tasks
+    "celery>=5.3.0",
+    "redis>=5.0.0",
     
     # Railway deployment
     "whitenoise>=6.5.0",
-    "dj-database-url>=2.1.0",
     "gunicorn>=21.2.0",
 ]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["afp_v2*", "accounts*"]
 
 [project.optional-dependencies]
 dev = [
