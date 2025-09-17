@@ -31,29 +31,61 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-%9%uqthj@o)3#4pxgov
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DJANGO_DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+# ALLOWED_HOSTS Configuration - Railway Compatible
+ALLOWED_HOSTS = []
 
-# CSRF Configuration
+# Parse DJANGO_ALLOWED_HOSTS from environment
+allowed_hosts_env = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1')
+if allowed_hosts_env:
+    ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(',')]
+
+# Add Railway domains automatically in production
+if 'RAILWAY_ENVIRONMENT' in os.environ:
+    # Add Railway app domains
+    ALLOWED_HOSTS.extend([
+        '.railway.app',
+        '.up.railway.app'
+    ])
+    
+    # Add specific Railway domain if available
+    railway_domain = os.getenv('RAILWAY_STATIC_URL', '')
+    if railway_domain:
+        ALLOWED_HOSTS.append(railway_domain)
+    
+    # Add public domain if available
+    public_domain = os.getenv('RAILWAY_PUBLIC_DOMAIN', '')
+    if public_domain:
+        ALLOWED_HOSTS.append(public_domain)
+
+# CSRF Configuration - Railway Compatible
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
 ]
 
-# Add Railway domain if in production
+# Add Railway domains in production
 if 'RAILWAY_ENVIRONMENT' in os.environ:
-    railway_domain = os.getenv('RAILWAY_STATIC_URL', '')
-    if railway_domain:
-        CSRF_TRUSTED_ORIGINS.append(f'https://{railway_domain}')
-    # Fallback for Railway domains
+    # Add Railway wildcard domains
     CSRF_TRUSTED_ORIGINS.extend([
         'https://*.up.railway.app',
         'https://*.railway.app'
     ])
     
-    # Also add the admin domain for CSRF
-    current_domain = os.getenv('RAILWAY_PUBLIC_DOMAIN', railway_domain)
-    if current_domain:
-        CSRF_TRUSTED_ORIGINS.append(f'https://{current_domain}')
+    # Add specific Railway domains if available
+    railway_domain = os.getenv('RAILWAY_STATIC_URL', '')
+    if railway_domain:
+        CSRF_TRUSTED_ORIGINS.append(f'https://{railway_domain}')
+    
+    public_domain = os.getenv('RAILWAY_PUBLIC_DOMAIN', '')
+    if public_domain:
+        CSRF_TRUSTED_ORIGINS.append(f'https://{public_domain}')
+    
+    # Add frontend domain if specified
+    frontend_url = os.getenv('FRONTEND_URL', '')
+    if frontend_url:
+        CSRF_TRUSTED_ORIGINS.append(frontend_url)
 
 
 # Application definition
@@ -102,16 +134,28 @@ WSGI_APPLICATION = "afp_v2.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-# Use PostgreSQL from Railway via DATABASE_URL
+# Database Configuration - Railway Compatible
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 if DATABASE_URL:
-    # Production/Railway PostgreSQL configuration
+    # Production/Railway PostgreSQL configuration using DATABASE_URL
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
+elif all([os.getenv('PGDATABASE'), os.getenv('PGUSER'), os.getenv('PGHOST')]):
+    # Alternative Railway PostgreSQL configuration using individual variables
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('PGDATABASE'),
+            'USER': os.getenv('PGUSER'),
+            'PASSWORD': os.getenv('PGPASSWORD', ''),
+            'HOST': os.getenv('PGHOST'),
+            'PORT': os.getenv('PGPORT', '5432'),
+        }
+    }
 else:
-    # Fallback to SQLite for local development without DATABASE_URL
+    # Fallback to SQLite for local development
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
@@ -165,64 +209,63 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# ============================================================================
+# SECURITY SETTINGS FOR PRODUCTION (Railway Compatible)
+# ============================================================================
+
+# Security settings for production ONLY
+if 'RAILWAY_ENVIRONMENT' in os.environ and not DEBUG:
+    # Force HTTPS only in production
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    
+    # HSTS Settings
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    
+    # Content Security
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_BROWSER_XSS_FILTER = True
+    X_FRAME_OPTIONS = 'DENY'
+    
+    # Cookie Security (already set above for sessions)
+    CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_SAMESITE = 'Lax'
+else:
+    # Development settings - no HTTPS enforcement
+    SECURE_SSL_REDIRECT = False
+    CSRF_COOKIE_SECURE = False
+    SECURE_HSTS_SECONDS = 0
+    # Explicitly disable HSTS in development
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    SECURE_HSTS_PRELOAD = False
+
 
 # ============================================================================
-# REDIS AND CELERY CONFIGURATION
+# CACHE AND SESSION CONFIGURATION
 # ============================================================================
 
-# Redis Configuration
-REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
-
-# Cache Configuration using Redis
+# Simple database-based cache (no Redis needed)
 CACHES = {
     'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': REDIS_URL,
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        },
-        'KEY_PREFIX': 'afp_v2',
-        'TIMEOUT': 300,  # 5 minutes default timeout
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'cache_table',
     }
 }
 
-# Session Configuration to use Redis
-# Temporarily using database sessions for debugging
-# SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-# SESSION_CACHE_ALIAS = 'default'
+# Session Configuration - Always use database sessions for simplicity
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_AGE = 86400  # 24 hours
 
-# Celery Configuration
-CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', REDIS_URL)
-CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', REDIS_URL)
-
-# Celery Task Settings
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = TIME_ZONE
-CELERY_ENABLE_UTC = True
-
-# Celery Task Routes (for organizing tasks)
-CELERY_TASK_ROUTES = {
-    'afp_v2.tasks.email.*': {'queue': 'email_processing'},
-    'afp_v2.tasks.ai.*': {'queue': 'ai_processing'},
-    'afp_v2.tasks.finance.*': {'queue': 'finance_processing'},
-}
-
-# Celery Beat Schedule (for periodic tasks)
-CELERY_BEAT_SCHEDULE = {
-    # Example: Check for new emails every 5 minutes
-    'check-new-emails': {
-        'task': 'afp_v2.tasks.email.check_new_emails',
-        'schedule': 300.0,  # 5 minutes
-    },
-}
-
-# Celery Worker Settings
-CELERY_WORKER_PREFETCH_MULTIPLIER = 1
-CELERY_TASK_ACKS_LATE = True
-CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
+# Security settings for sessions in production
+if 'RAILWAY_ENVIRONMENT' in os.environ and not DEBUG:
+    SESSION_COOKIE_SECURE = True  # HTTPS only in production
+else:
+    SESSION_COOKIE_SECURE = False  # Allow HTTP in development
 
 # ============================================================================
 # LOGGING CONFIGURATION FOR DEBUGGING

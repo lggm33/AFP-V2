@@ -18,9 +18,63 @@ from django.contrib import admin
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import JsonResponse
+from django.contrib.auth import authenticate
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+import json
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def debug_login_api(request):
+    """
+    Temporary debug endpoint to test login without page reload
+    """
+    try:
+        data = json.loads(request.body)
+        username = data.get('username')
+        password = data.get('password')
+        
+        if not username or not password:
+            return JsonResponse({
+                'success': False,
+                'error': 'Username and password required'
+            })
+        
+        # Test authentication
+        user = authenticate(username=username, password=password)
+        
+        if user:
+            return JsonResponse({
+                'success': True,
+                'user_info': {
+                    'username': user.username,
+                    'is_active': user.is_active,
+                    'is_staff': user.is_staff,
+                    'is_superuser': user.is_superuser,
+                    'last_login': str(user.last_login) if user.last_login else None,
+                }
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': 'Authentication failed',
+                'debug_info': {
+                    'username_provided': username,
+                    'session_engine': settings.SESSION_ENGINE,
+                    'debug_mode': settings.DEBUG,
+                }
+            })
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Server error: {str(e)}'
+        })
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("debug-login/", debug_login_api, name="debug_login"),  # Temporary debug endpoint
 ]
 
 # Serve static files during development

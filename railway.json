@@ -5,7 +5,7 @@
     "buildCommand": "pip install -e backend/.[prod]"
   },
   "deploy": {
-    "startCommand": "cd backend && python manage.py collectstatic --noinput && python manage.py migrate && gunicorn afp_v2.wsgi:application --bind 0.0.0.0:$PORT",
+    "startCommand": "cd backend && python manage.py collectstatic --noinput && python manage.py migrate && python manage.py createcachetable && gunicorn afp_v2.wsgi:application --bind 0.0.0.0:$PORT",
     "healthcheckPath": "/admin/",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
@@ -16,8 +16,9 @@
       "variables": {
         "DJANGO_SETTINGS_MODULE": "afp_v2.settings",
         "DJANGO_DEBUG": "False",
-        "DJANGO_ALLOWED_HOSTS": ".railway.app",
-        "RAILWAY_ENVIRONMENT": "production"
+        "DJANGO_ALLOWED_HOSTS": ".railway.app,.up.railway.app",
+        "RAILWAY_ENVIRONMENT": "production",
+        "DJANGO_SECRET_KEY": "${{secrets.DJANGO_SECRET_KEY}}"
       }
     }
   }

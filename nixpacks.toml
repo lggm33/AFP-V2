@@ -14,4 +14,4 @@ cmds = [
 ]
 
 [start]
-cmd = 'cd backend && python manage.py migrate && gunicorn afp_v2.wsgi:application --bind 0.0.0.0:$PORT'
+cmd = 'cd backend && python manage.py migrate && python manage.py createcachetable && gunicorn afp_v2.wsgi:application --bind 0.0.0.0:$PORT'
