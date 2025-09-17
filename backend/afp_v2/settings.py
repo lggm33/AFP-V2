@@ -63,9 +63,16 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:3000',
     'http://localhost:5173',  # Vite dev server
     'http://127.0.0.1:5173',
+    'http://localhost:4173',  # Vite preview server
+    'http://127.0.0.1:4173',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
 ]
+
+# Add frontend URL from environment variable
+frontend_url = os.getenv('FRONTEND_URL', '')
+if frontend_url:
+    CSRF_TRUSTED_ORIGINS.append(frontend_url)
 
 # Add Railway domains in production
 if 'RAILWAY_ENVIRONMENT' in os.environ:
@@ -401,13 +408,27 @@ OUTLOOK_SCOPES = [
 # CORS CONFIGURATION
 # ============================================================================
 
-# CORS para React separado
+# CORS para React separado - Base configuration for local development
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # React dev (puerto estándar)
     "http://localhost:5173",  # Vite dev server (puerto por defecto)
     "http://127.0.0.1:5173",  # Vite dev server (127.0.0.1)
-    "https://your-frontend-domain.com",  # Production
+    "http://localhost:4173",  # Vite preview server
+    "http://127.0.0.1:4173",  # Vite preview server (127.0.0.1)
 ]
+
+# Add frontend URL from environment variable
+frontend_url = os.getenv('FRONTEND_URL', '')
+if frontend_url:
+    CORS_ALLOWED_ORIGINS.append(frontend_url)
+
+# Add Railway frontend domains automatically in production
+if 'RAILWAY_ENVIRONMENT' in os.environ:
+    # Add Railway wildcard domains for CORS
+    CORS_ALLOWED_ORIGINS.extend([
+        "https://*.up.railway.app",
+        "https://*.railway.app"
+    ])
 
 # Permitir credenciales en requests CORS
 CORS_ALLOW_CREDENTIALS = True
